@@ -1171,3 +1171,68 @@ listing-workstation/
   -> 真实卖家浏览器查询
   -> 记录 Commit 和验收结果
 ```
+
+## 29. 在同一 Subdomain 部署第二个独立项目
+
+Server Surveillance 是这套架构的第二个项目，正式入口为：
+
+```text
+http://ai-hub.uat.shopee.io/server_surveillance/
+```
+
+它没有复用 Listing Workstation 的 Node 进程，而是使用独立容器和独立 upstream：
+
+```text
+/listing_workstation/   -> listing-workstation:8080
+/server_surveillance/   -> server-surveillance:8090
+```
+
+这样做的目的：
+
+1. 两个项目可以独立构建和重启。
+2. 监控页面发生错误时不会影响业务查询。
+3. 每个项目拥有独立 API 命名空间。
+4. 后续可以继续增加新的项目路径。
+
+Nginx 路由模式：
+
+```nginx
+location = /server_surveillance {
+  return 301 /server_surveillance/;
+}
+
+location ^~ /server_surveillance/ {
+  proxy_pass http://server_surveillance/;
+}
+```
+
+`proxy_pass` 末尾的 `/` 会在请求进入监控容器前移除 `/server_surveillance/` 前缀。因此浏览器请求：
+
+```text
+/server_surveillance/api/status
+```
+
+监控容器实际收到：
+
+```text
+/api/status
+```
+
+监控服务安全边界：
+
+- 只读挂载 `/proc/loadavg`、`/proc/meminfo` 和 `/proc/uptime`。
+- 不挂载 `/var/run/docker.sock`。
+- 不读取进程列表和命令行。
+- 不返回主机名、Token、环境变量或凭证。
+- 通过内部健康接口检查 Listing Workstation。
+- 容器文件系统为只读，并只提供临时 `/tmp`。
+
+部署后验证：
+
+```sh
+curl -fsS http://127.0.0.1/server_surveillance/api/health
+curl -fsS http://127.0.0.1/server_surveillance/api/status
+curl -fsS http://ai-hub.uat.shopee.io/server_surveillance/api/status
+```
+
+最后打开页面，确认自动刷新、Load、CPU、内存、运行时间和服务健康状态均能展示。

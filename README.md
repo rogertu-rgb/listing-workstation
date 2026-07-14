@@ -23,6 +23,8 @@ Nginx :80 (or company Ingress)
          DataSuite API
 ```
 
+同一 Nginx 还将 `/server_surveillance/` 转发到独立的只读监控服务。监控服务只读取三个宿主机 `/proc` 指标文件，并通过内部健康接口检查 Listing Workstation；它不挂载 Docker Socket，不读取进程列表，也不返回凭证。
+
 服务启动后会读取本地卖家缓存，并在后台请求一次卖家数据。之后每 24 小时重新请求 DataSuite，从返回行中提取唯一卖家并原子更新 `/app/data/sellers.json`。即使刷新失败，服务也会保留上一次成功的列表。
 
 默认会用空的 `request_param_1` 尝试获取卖家。当 DataSuite 接口不支持空参数枚举时，页面仍允许手动输入完整 GGP Name；正式的每日卖家目录需另行配置可访问的 `seller_list` 数据源。
@@ -74,13 +76,16 @@ docker compose logs --tail=100 listing-workstation
 curl -fsS http://127.0.0.1/nginx-health
 curl -fsS http://127.0.0.1/listing_workstation/api/health
 curl -fsS http://127.0.0.1:8080/api/health
+curl -fsS http://127.0.0.1/server_surveillance/api/status
 ```
 
-Compose 将 Nginx 映射到宿主机 `80` 端口，Node 服务的 `8080` 只绑定在宿主机 `127.0.0.1`，并使用命名卷持久化每日卖家缓存。两个容器都设置为 `restart: unless-stopped`，服务器重启后会自动恢复。
+Compose 将 Nginx 映射到宿主机 `80` 端口，Listing Workstation 的 `8080` 只绑定在宿主机 `127.0.0.1`，Server Surveillance 的 `8090` 只暴露在 Compose 内部网络，并使用命名卷持久化每日卖家缓存。三个容器都设置为 `restart: unless-stopped`，服务器重启后会自动恢复。
 
 ## Nginx 与 HTTPS
 
 `nginx/default.conf` 将 `/listing_workstation/` 下的页面和 API 转发到同一个 Node upstream。根地址会跳转到 `/listing_workstation/`，其他未知路径返回 404，为同一 subdomain 后续承载更多项目保留独立命名空间。Nginx 的超时时间略高于 DataSuite 最长查询时间，避免长查询被代理提前切断。
+
+服务器监控入口为 `http://ai-hub.uat.shopee.io/server_surveillance/`，对应状态接口为 `/server_surveillance/api/status`。
 
 推荐由公司 Ingress 绑定内部域名、处理 HTTPS 证书和 SSO，再将流量转发到该服务器的 `80` 端口。如果必须在该服务器直接终止 HTTPS，需先获得正式域名和证书，再增加 `listen 443 ssl`配置；不要将证书或私钥提交到 Git。
 

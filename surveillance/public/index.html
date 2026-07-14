@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Server Surveillance</title>
+  <style>
+    :root {
+      --canvas: oklch(97.8% 0.008 62);
+      --surface: oklch(99.2% 0.006 62);
+      --surface-muted: oklch(95.6% 0.012 62);
+      --ink: oklch(25% 0.02 45);
+      --muted: oklch(51% 0.018 48);
+      --line: oklch(88% 0.015 60);
+      --accent: oklch(66% 0.18 45);
+      --accent-soft: oklch(94% 0.04 45);
+      --healthy: oklch(56% 0.13 150);
+      --healthy-soft: oklch(94% 0.035 150);
+      --warning: oklch(67% 0.14 78);
+      --warning-soft: oklch(95% 0.045 78);
+      --critical: oklch(58% 0.19 28);
+      --critical-soft: oklch(94% 0.04 28);
+      --shadow: 0 16px 44px oklch(33% 0.025 45 / 0.08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); }
+    button { font: inherit; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 34px 0 56px; }
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; margin-bottom: 28px; }
+    .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 28px; line-height: 1.15; letter-spacing: -.025em; }
+    .subtitle { max-width: 68ch; margin: 9px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .actions { display: flex; align-items: center; gap: 12px; }
+    .refresh-copy { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .refresh-button { min-height: 38px; border: 1px solid var(--line); border-radius: 9px; padding: 0 14px; background: var(--surface); color: var(--ink); cursor: pointer; font-weight: 650; box-shadow: 0 2px 6px oklch(33% 0.02 45 / .05); transition: background-color 180ms ease-out, border-color 180ms ease-out, transform 180ms ease-out; }
+    .refresh-button:hover { border-color: oklch(77% 0.035 48); background: var(--accent-soft); }
+    .refresh-button:focus-visible { outline: 3px solid oklch(72% 0.13 45 / .34); outline-offset: 2px; }
+    .refresh-button:active { transform: translateY(1px); }
+    .refresh-button:disabled { cursor: wait; opacity: .58; }
+    .status-banner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; min-height: 78px; border: 1px solid var(--line); border-radius: 14px; padding: 17px 20px; background: var(--surface); box-shadow: var(--shadow); }
+    .status-dot { width: 13px; height: 13px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 5px var(--surface-muted); }
+    .status-banner[data-state="healthy"] .status-dot { background: var(--healthy); box-shadow: 0 0 0 5px var(--healthy-soft); }
+    .status-banner[data-state="warning"] .status-dot { background: var(--warning); box-shadow: 0 0 0 5px var(--warning-soft); }
+    .status-banner[data-state="critical"] .status-dot { background: var(--critical); box-shadow: 0 0 0 5px var(--critical-soft); }
+    .status-title { margin: 0; font-size: 16px; font-weight: 760; }
+    .status-detail { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .status-time { color: var(--muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .metrics { display: grid; grid-template-columns: 1.35fr repeat(3, 1fr); margin: 26px 0 30px; border-block: 1px solid var(--line); }
+    .metric { min-width: 0; padding: 22px 24px; }
+    .metric + .metric { border-left: 1px solid var(--line); }
+    .metric-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .025em; }
+    .metric-value { margin-top: 8px; font-size: 24px; font-weight: 760; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+    .metric-meta { margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .load-values { display: flex; gap: 16px; align-items: baseline; }
+    .load-values span { display: grid; gap: 3px; }
+    .load-values small { color: var(--muted); font-size: 10px; font-weight: 650; }
+    .meter { height: 6px; margin-top: 12px; overflow: hidden; border-radius: 999px; background: var(--surface-muted); }
+    .meter-fill { width: 0; height: 100%; border-radius: inherit; background: var(--healthy); transition: width 220ms cubic-bezier(.22, 1, .36, 1), background-color 220ms ease-out; }
+    [data-state="warning"] .meter-fill { background: var(--warning); }
+    [data-state="critical"] .meter-fill { background: var(--critical); }
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .8fr); gap: 24px; align-items: start; }
+    .section { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 8px 24px oklch(33% 0.02 45 / .045); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 20px 15px; border-bottom: 1px solid var(--line); }
+    .section h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+    .section-note { color: var(--muted); font-size: 12px; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; }
+    .chart { min-width: 0; padding: 20px; }
+    .chart + .chart { border-left: 1px solid var(--line); }
+    .chart-label { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+    .chart-value { color: var(--ink); font-weight: 720; font-variant-numeric: tabular-nums; }
+    svg { display: block; width: 100%; height: 138px; margin-top: 12px; overflow: visible; }
+    .chart-grid { stroke: var(--line); stroke-width: 1; }
+    .chart-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .chart-line.memory { stroke: var(--healthy); }
+    .chart-empty { display: grid; place-items: center; height: 138px; color: var(--muted); font-size: 12px; }
+    .service-list { list-style: none; margin: 0; padding: 0; }
+    .service-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 17px 20px; }
+    .service-row + .service-row { border-top: 1px solid var(--line); }
+    .service-icon { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    .service-row[data-state="healthy"] .service-icon { background: var(--healthy); }
+    .service-row[data-state="warning"] .service-icon { background: var(--warning); }
+    .service-row[data-state="critical"] .service-icon { background: var(--critical); }
+    .service-name { font-size: 13px; font-weight: 720; }
+    .service-message { margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .service-latency { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .footnote { margin: 22px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .skeleton { color: transparent; border-radius: 5px; background: var(--surface-muted); animation: pulse 1.3s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+    @media (max-width: 900px) {
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .metric:nth-child(3) { border-left: 0; }
+      .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
+      .content-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 24px, 1180px); padding-top: 22px; }
+      .topbar { display: grid; gap: 18px; }
+      .actions { justify-content: space-between; }
+      .status-banner { grid-template-columns: auto 1fr; }
+      .status-time { grid-column: 2; text-align: left; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric + .metric { border-left: 0; border-top: 1px solid var(--line); }
+      .charts { grid-template-columns: 1fr; }
+      .chart + .chart { border-left: 0; border-top: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Internal operations</p>
+        <h1>Server Surveillance</h1>
+        <p class="subtitle">应用服务器负载与关键服务健康状态。数据每 10 秒刷新，不展示进程、凭证或敏感系统信息。</p>
+      </div>
+      <div class="actions">
+        <span class="refresh-copy" id="refresh-copy">自动刷新已开启</span>
+        <button class="refresh-button" id="refresh-button" type="button">立即刷新</button>
+      </div>
+    </header>
+
+    <section class="status-banner" id="status-banner" data-state="loading" aria-live="polite">
+      <span class="status-dot" aria-hidden="true"></span>
+      <div>
+        <p class="status-title" id="status-title">正在读取服务器状态</p>
+        <p class="status-detail" id="status-detail">首次数据通常会在几秒内返回</p>
+      </div>
+      <div class="status-time" id="status-time">尚未更新</div>
+    </section>
+
+    <section class="metrics" aria-label="服务器核心指标">
+      <article class="metric" id="load-metric" data-state="loading">
+        <div class="metric-label">LOAD AVERAGE</div>
+        <div class="metric-value load-values">
+          <span><b id="load-one">0.00</b><small>1 MIN</small></span>
+          <span><b id="load-five">0.00</b><small>5 MIN</small></span>
+          <span><b id="load-fifteen">0.00</b><small>15 MIN</small></span>
+        </div>
+        <div class="meter"><div class="meter-fill" id="load-meter"></div></div>
+        <div class="metric-meta" id="load-meta">等待 CPU 核数</div>
+      </article>
+      <article class="metric" id="cpu-metric" data-state="loading">
+        <div class="metric-label">CPU 使用率</div>
+        <div class="metric-value" id="cpu-value">0.0%</div>
+        <div class="meter"><div class="meter-fill" id="cpu-meter"></div></div>
+        <div class="metric-meta" id="cpu-meta">等待采样</div>
+      </article>
+      <article class="metric" id="memory-metric" data-state="loading">
+        <div class="metric-label">内存使用</div>
+        <div class="metric-value" id="memory-value">0.0%</div>
+        <div class="meter"><div class="meter-fill" id="memory-meter"></div></div>
+        <div class="metric-meta" id="memory-meta">等待采样</div>
+      </article>
+      <article class="metric">
+        <div class="metric-label">服务器运行时间</div>
+        <div class="metric-value" id="uptime-value">0 天</div>
+        <div class="metric-meta" id="monitor-uptime">监控服务刚刚启动</div>
+      </article>
+    </section>
+
+    <div class="content-grid">
+      <section class="section">
+        <div class="section-head">
+          <h2>最近趋势</h2>
+          <span class="section-note">当前浏览器会话，最多 30 个采样点</span>
+        </div>
+        <div class="charts">
+          <div class="chart">
+            <div class="chart-label"><span>标准化 Load</span><span class="chart-value" id="load-chart-value">0.0%</span></div>
+            <div id="load-chart"></div>
+          </div>
+          <div class="chart">
+            <div class="chart-label"><span>内存使用</span><span class="chart-value" id="memory-chart-value">0.0%</span></div>
+            <div id="memory-chart"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>关键服务</h2>
+          <span class="section-note" id="service-count">检查中</span>
+        </div>
+        <ul class="service-list" id="service-list">
+          <li class="service-row"><span class="service-icon"></span><div><div class="service-name">正在检查服务</div><div class="service-message">等待响应</div></div><span class="service-latency">...</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <p class="footnote">Load Average 表示等待 CPU 或不可中断资源的工作量，并不等同于 CPU 百分比。标准化 Load 使用 1 分钟 Load 除以 CPU 核数，达到 70% 时提示关注，达到 100% 时标记为高负载。</p>
+  </main>
+
+  <script>
+    var APP_BASE_PATH = window.location.pathname.indexOf('/server_surveillance') === 0 ? '/server_surveillance' : '';
+    var historyData = { load: [], memory: [] };
+    var refreshTimer;
+    var isLoading = false;
+
+    function byId(id) { return document.getElementById(id); }
+    function clamp(value) { return Math.max(0, Math.min(100, Number(value) || 0)); }
+    function formatPercent(value) { return Number(value || 0).toFixed(1) + '%'; }
+    function formatBytes(bytes) {
+      var gib = Number(bytes || 0) / 1073741824;
+      return gib >= 10 ? gib.toFixed(1) + ' GB' : gib.toFixed(2) + ' GB';
+    }
+    function formatUptime(seconds) {
+      var days = Math.floor(seconds / 86400);
+      var hours = Math.floor((seconds % 86400) / 3600);
+      var minutes = Math.floor((seconds % 3600) / 60);
+      if (days) return days + ' 天 ' + hours + ' 小时';
+      if (hours) return hours + ' 小时 ' + minutes + ' 分钟';
+      return minutes + ' 分钟';
+    }
+    function stateLabel(state) {
+      return state === 'healthy' ? '运行正常' : state === 'warning' ? '需要关注' : '存在异常';
+    }
+    function setMeter(metricId, meterId, value, state) {
+      byId(metricId).dataset.state = state;
+      byId(meterId).style.width = clamp(value) + '%';
+    }
+    function pushHistory(key, value) {
+      historyData[key].push(Number(value) || 0);
+      if (historyData[key].length > 30) historyData[key].shift();
+    }
+    function renderChart(mountId, values, className) {
+      var mount = byId(mountId);
+      if (values.length < 2) {
+        mount.innerHTML = '<div class="chart-empty">等待更多采样点</div>';
+        return;
+      }
+      var width = 360, height = 138, padding = 5;
+      var points = values.map(function(value, index) {
+        var x = padding + index * ((width - padding * 2) / Math.max(1, values.length - 1));
+        var y = height - padding - clamp(value) * ((height - padding * 2) / 100);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+      mount.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="最近趋势折线图">' +
+        '<line class="chart-grid" x1="0" y1="35" x2="360" y2="35"></line>' +
+        '<line class="chart-grid" x1="0" y1="69" x2="360" y2="69"></line>' +
+        '<line class="chart-grid" x1="0" y1="103" x2="360" y2="103"></line>' +
+        '<polyline class="chart-line ' + className + '" points="' + points + '"></polyline></svg>';
+    }
+    function renderServices(services) {
+      byId('service-count').textContent = services.filter(function(service) { return service.state === 'healthy'; }).length + ' / ' + services.length + ' 正常';
+      byId('service-list').innerHTML = services.map(function(service) {
+        var configured = service.configured === false ? '，DataSuite 未配置' : '';
+        return '<li class="service-row" data-state="' + service.state + '"><span class="service-icon" aria-hidden="true"></span><div><div class="service-name">' + service.name + '</div><div class="service-message">' + service.message + configured + '</div></div><span class="service-latency">' + service.latencyMs + ' ms</span></li>';
+      }).join('');
+    }
+    function renderStatus(data) {
+      var host = data.host;
+      byId('status-banner').dataset.state = data.overallState;
+      byId('status-title').textContent = stateLabel(data.overallState);
+      byId('status-detail').textContent = data.overallState === 'healthy' ? '服务器负载和关键服务均在正常范围内' : data.overallState === 'warning' ? '部分指标接近关注阈值，请观察后续趋势' : '至少一个指标或服务异常，请检查服务器日志';
+      byId('status-time').textContent = '更新于 ' + new Date(data.generatedAt).toLocaleTimeString('zh-CN', { hour12: false });
+      byId('load-one').textContent = host.load.one.toFixed(2);
+      byId('load-five').textContent = host.load.five.toFixed(2);
+      byId('load-fifteen').textContent = host.load.fifteen.toFixed(2);
+      byId('load-meta').textContent = host.cpuCores + ' 核，标准化负载 ' + formatPercent(host.normalizedLoadPercent);
+      setMeter('load-metric', 'load-meter', host.normalizedLoadPercent, host.loadState);
+      byId('cpu-value').textContent = formatPercent(host.cpuPercent);
+      byId('cpu-meta').textContent = '最近采样窗口';
+      setMeter('cpu-metric', 'cpu-meter', host.cpuPercent, host.cpuState);
+      byId('memory-value').textContent = formatPercent(host.memory.usedPercent);
+      byId('memory-meta').textContent = formatBytes(host.memory.usedBytes) + ' / ' + formatBytes(host.memory.totalBytes);
+      setMeter('memory-metric', 'memory-meter', host.memory.usedPercent, host.memory.state);
+      byId('uptime-value').textContent = formatUptime(host.uptimeSeconds);
+      byId('monitor-uptime').textContent = '监控服务已运行 ' + formatUptime(data.monitorUptimeSeconds);
+      byId('load-chart-value').textContent = formatPercent(host.normalizedLoadPercent);
+      byId('memory-chart-value').textContent = formatPercent(host.memory.usedPercent);
+      pushHistory('load', host.normalizedLoadPercent);
+      pushHistory('memory', host.memory.usedPercent);
+      renderChart('load-chart', historyData.load, '');
+      renderChart('memory-chart', historyData.memory, 'memory');
+      renderServices(data.services || []);
+    }
+    async function refreshStatus() {
+      if (isLoading) return;
+      isLoading = true;
+      byId('refresh-button').disabled = true;
+      byId('refresh-copy').textContent = '正在刷新';
+      try {
+        var response = await fetch(APP_BASE_PATH + '/api/status', { headers: { accept: 'application/json' }, cache: 'no-store' });
+        var data = await response.json().catch(function() { return {}; });
+        if (!response.ok) throw new Error(data.error || '状态接口不可用');
+        renderStatus(data);
+        byId('refresh-copy').textContent = '每 ' + Number(data.refreshAfterSeconds || 10) + ' 秒自动刷新';
+      } catch (error) {
+        byId('status-banner').dataset.state = 'critical';
+        byId('status-title').textContent = '无法读取服务器状态';
+        byId('status-detail').textContent = error.message || '请稍后重试';
+        byId('status-time').textContent = '刷新失败';
+        byId('refresh-copy').textContent = '自动刷新仍在重试';
+      } finally {
+        isLoading = false;
+        byId('refresh-button').disabled = false;
+      }
+    }
+    byId('refresh-button').addEventListener('click', refreshStatus);
+    document.addEventListener('visibilitychange', function() { if (!document.hidden) refreshStatus(); });
+    refreshStatus();
+    refreshTimer = setInterval(function() { if (!document.hidden) refreshStatus(); }, 10000);
+  </script>
+</body>
+</html>
+

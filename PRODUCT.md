@@ -6,11 +6,13 @@ product
 
 ## Users
 
-Shopee seller-management and BI users who need to inspect a GGP seller and turn listing-performance data into practical assortment actions during daily work.
+Shopee seller-management and BI users who need to inspect a GGP seller and turn listing-performance data into practical assortment actions during daily work. The same internal audience also needs a concise operational view of the application server and deployed service health.
 
 ## Product Purpose
 
 Listing Workstation accepts a complete GGP Name, queries DataSuite directly, and presents zone-level strategy summaries plus the most relevant listings. Success means a user can intentionally run one seller query, understand its progress, and act on a trustworthy result without depending on a Google Sheet queue.
+
+Server Surveillance provides a separate, read-only view of server load, memory, uptime, response latency, and critical application health. Success means an operator can recognize normal, warning, or critical conditions without receiving sensitive process, credential, or infrastructure data.
 
 ## Brand Personality
 
@@ -27,6 +29,7 @@ Avoid consumer-shopping decoration, ambiguous automatic actions, hidden backgrou
 3. Preserve familiar internal-tool interaction patterns and terminology.
 4. Prefer concise operational evidence such as row, zone, and SKU counts over decorative feedback.
 5. Keep credentials and infrastructure details outside the browser-facing interface.
+6. Use explicit thresholds, timestamps, and service checks so operational status can be independently verified.
 
 ## Accessibility & Inclusion
 
