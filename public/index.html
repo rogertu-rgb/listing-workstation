@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>增长潜力品推荐</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --brand: #ee4d2d;
+      --brand-dark: #d93f21;
+      --brand-soft: #fff1ed;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e6eaf0;
+      --page: #f5f7fb;
+      --surface: #ffffff;
+      --success: #0f8a5f;
+      --info: #2563eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--page) 260px, #eef2f7 100%);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .sidebar {
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 224px;
+      z-index: 100;
+      padding: 14px 12px;
+      box-shadow: 10px 0 24px rgba(23, 32, 51, 0.04);
+    }
+
+    .brand-panel {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      background: var(--brand);
+      box-shadow: 0 8px 18px rgba(238, 77, 45, 0.22);
+      flex: 0 0 auto;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      line-height: 1.2;
+      font-weight: 900;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .brand-subtitle {
+      margin-top: 4px;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .nav-link {
+      color: #344054;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      border-radius: 8px;
+      min-height: 40px;
+      transition: background-color 0.18s ease, color 0.18s ease;
+    }
+
+    .nav-link:hover { background: #f6f8fb; color: var(--brand); }
+    .nav-link.active { background: var(--brand-soft); color: var(--brand); font-weight: 800; }
+    .nav-link.empty {
+      color: #98a2b3;
+      cursor: default;
+      pointer-events: none;
+    }
+    .submenu { padding-left: 18px; }
+    .submenu .nav-link { min-height: 32px; padding: 7px 10px; font-size: 12px; font-weight: 500; color: var(--muted); }
+    .submenu .nav-link.empty { color: #b0b8c4; }
+
+    .main-content {
+      margin-left: 224px;
+      padding: 24px;
+    }
+
+    .page-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .page-title {
+      margin: 4px 0 4px;
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .time-badge,
+    .refresh-btn,
+    .reset-btn {
+      min-height: 36px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .time-badge {
+      background: #eef5ff;
+      color: #31527a;
+      border: 1px solid #dbeafe;
+    }
+
+    .refresh-btn {
+      border: 0;
+      background: var(--brand);
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(238, 77, 45, 0.22);
+    }
+
+    .refresh-btn:hover { background: var(--brand-dark); color: #ffffff; }
+    .refresh-btn.is-loading { pointer-events: none; opacity: 0.78; }
+    .refresh-btn.is-loading i { animation: spin 0.9s linear infinite; }
+
+    .reset-btn {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+    }
+
+    .reset-btn:hover {
+      color: var(--brand);
+      border-color: #ffd1c6;
+      background: var(--brand-soft);
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .filter-panel,
+    .growth-status-bar,
+    .growth-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 22px rgba(23, 32, 51, 0.04);
+    }
+
+    .filter-panel {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .filter-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .filter-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .form-select,
+    .form-control {
+      border-color: var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 13px;
+      min-height: 38px;
+    }
+
+    .form-select:focus,
+    .form-control:focus {
+      border-color: #ffb19f;
+      box-shadow: 0 0 0 0.2rem rgba(238, 77, 45, 0.12);
+    }
+
+    .seller-search {
+      position: relative;
+    }
+
+    .seller-search-menu {
+      display: none;
+      position: absolute;
+      z-index: 80;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 18px 38px rgba(23, 32, 51, 0.14);
+      padding: 6px;
+    }
+
+    .seller-search.is-open .seller-search-menu { display: block; }
+
+    .seller-search-option {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .seller-search-option:hover,
+    .seller-search-option.is-active {
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+
+    .seller-search-meta {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .seller-search-empty {
+      color: var(--muted);
+      padding: 10px;
+      font-size: 12px;
+    }
+
+    .growth-stack { display: grid; gap: 16px; }
+
+    .growth-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 14px;
+    }
+
+    .growth-status-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .growth-count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .addon-action-card {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: #7c2d12;
+    }
+
+    .addon-action-card.is-visible { display: flex; }
+
+    .addon-action-main {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .addon-action-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .addon-action-desc {
+      margin: 0;
+      color: #9a3412;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .addon-action-btn {
+      flex: 0 0 auto;
+      min-height: 34px;
+      border: 0;
+      border-radius: 8px;
+      background: #ea580c;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 8px 18px rgba(234, 88, 12, 0.2);
+    }
+
+    .addon-action-btn:hover {
+      background: #c2410c;
+      color: #ffffff;
+    }
+
+    .growth-panel { padding: 16px; }
+
+    .growth-section-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .growth-section-icon {
+      width: 36px;
+      height: 36px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .growth-section-head h5 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .growth-section-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .growth-summary-note {
+      margin: 0 0 14px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fff7f4 0%, #ffffff 100%);
+      border: 1px solid #ffd8cd;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .growth-summary-note p { margin: 0; }
+    .growth-summary-note p + p { margin-top: 8px; }
+
+    .growth-summary-wrap {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(23, 32, 51, 0.04);
+    }
+
+    .growth-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .growth-summary-table thead th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .growth-summary-table tbody td {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .growth-summary-table tbody tr:last-child td { border-bottom: 0; }
+
+    .growth-summary-type-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.5;
+      cursor: pointer;
+      text-align: left;
+      transition: color .2s ease;
+    }
+
+    .growth-summary-type-button:hover,
+    .growth-summary-type-button.active { color: var(--brand); }
+
+    .growth-summary-zone { display: flex; flex-direction: column; gap: 8px; }
+    .growth-zone-name { color: var(--ink); font-size: 14px; font-weight: 900; line-height: 1.5; }
+    .growth-zone-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+    .growth-zone-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      width: fit-content;
+    }
+
+    .growth-zone-badge.blue { background: #ecfdf5; color: var(--success); border: 1px solid #bbf7d0; }
+    .growth-zone-badge.red { background: #fff1ed; color: var(--brand); border: 1px solid #ffd4c7; }
+
+    .growth-feature-list { margin: 0; padding-left: 18px; }
+    .growth-feature-list li + li { margin-top: 6px; }
+
+    .growth-strategy-tabs {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: -4px 0 16px;
+    }
+
+    .growth-strategy-tab {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: #344054;
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .18s ease;
+    }
+
+    .growth-strategy-tab:hover,
+    .growth-strategy-tab.active {
+      color: var(--brand);
+      background: var(--brand-soft);
+      border-color: #ffd1c6;
+    }
+
+    .growth-product-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .growth-multiselect { position: relative; }
+
+    .growth-multiselect-trigger {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--ink);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .growth-multiselect-trigger:hover,
+    .growth-multiselect.is-open .growth-multiselect-trigger {
+      border-color: #ffb19f;
+      box-shadow: 0 0 0 0.2rem rgba(238, 77, 45, 0.08);
+    }
+
+    .growth-multiselect-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      padding: 8px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(23, 32, 51, 0.13);
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .growth-multiselect.is-open .growth-multiselect-menu { display: block; }
+
+    .growth-multiselect-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #344054;
+      cursor: pointer;
+    }
+
+    .growth-multiselect-option:hover { background: #f8fafc; }
+
+    .col-ecommerce-8-grid {
+      width: 16.666%;
+      flex: 0 0 16.666%;
+      max-width: 16.666%;
+      padding: 0 6px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 1600px) { .col-ecommerce-8-grid { width: 20%; flex: 0 0 20%; max-width: 20%; } }
+    @media (max-width: 1200px) { .col-ecommerce-8-grid { width: 25%; flex: 0 0 25%; max-width: 25%; } .growth-summary-table { min-width: 1120px; } }
+    @media (max-width: 992px) { .col-ecommerce-8-grid { width: 33.333%; flex: 0 0 33.333%; max-width: 33.333%; } }
+    @media (max-width: 768px) {
+      .sidebar { position: static; width: 100%; min-height: auto; }
+      .main-content { margin-left: 0; padding: 16px; }
+      .page-toolbar, .growth-status-bar, .growth-product-tools { flex-direction: column; align-items: stretch; }
+      .col-ecommerce-8-grid { width: 50%; flex: 0 0 50%; max-width: 50%; }
+    }
+
+    .product-card-v2 {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 3px 10px rgba(23, 32, 51, 0.04);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .product-card-v2:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(23, 32, 51, 0.11);
+      border-color: #ffc2b5;
+    }
+
+    .product-image-wrap {
+      position: relative;
+      padding-bottom: 100%;
+      background: #eef1f5;
+      overflow: hidden;
+    }
+
+    .product-image-wrap img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.22s ease;
+    }
+
+    .product-card-v2:hover .product-image-wrap img { transform: scale(1.04); }
+
+    .top-badge,
+    .country-badge {
+      position: absolute;
+      z-index: 2;
+      min-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 900;
+      backdrop-filter: blur(8px);
+    }
+
+    .top-badge { left: 8px; top: 8px; color: #ffffff; background: var(--brand); }
+    .country-badge { right: 8px; top: 8px; color: #1d4ed8; background: rgba(239, 246, 255, 0.92); border: 1px solid rgba(147, 197, 253, 0.6); }
+
+    .product-body { padding: 10px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .product-title-row { display: grid; gap: 7px; }
+    .shop-tag { width: fit-content; color: #0f766e; background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 11px; font-weight: 800; padding: 4px 7px; }
+    .title-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 28px; gap: 8px; align-items: start; }
+    .product-title { font-size: 13px; font-weight: 700; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; color: var(--ink); }
+    .copy-title-btn { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: #ffffff; color: #475467; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+    .copy-title-btn:hover { border-color: #ffd1c6; background: var(--brand-soft); color: var(--brand); }
+    .price-line { display: flex; align-items: baseline; gap: 6px; }
+    .usd-price { color: var(--brand); font-size: 16px; font-weight: 900; }
+    .local-price { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .stat-line, .meta-line { color: #344054; font-size: 11px; line-height: 1.35; font-weight: 700; }
+    .card-actions { margin-top: auto; display: grid; grid-template-columns: 1fr; }
+    .tool-btn { min-height: 31px; border-radius: 8px; border: 1px solid var(--line); background: #ffffff; color: #344054; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; width: 100%; }
+    .tool-btn:hover { color: var(--brand); background: var(--brand-soft); border-color: #ffd1c6; }
+    .growth-empty-state { width: 100%; padding: 28px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; background: #fff; }
+  </style>
+</head>
+<body>
+<div class="container-fluid px-0">
+  <div class="sidebar">
+    <div class="brand-panel">
+      <div class="brand-icon"><i class="bi bi-bag-heart-fill"></i></div>
+      <div>
+        <div class="brand-title">Shopee Fashion</div>
+        <div class="brand-subtitle">选品指南</div>
+      </div>
+    </div>
+    <div class="nav flex-column sidebar-nav">
+      <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true"><i class="bi bi-stars"></i> Shopee选品推荐 <i class="bi bi-chevron-down ms-auto small"></i></a>
+      <div class="submenu">
+        <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true">热销产品</a>
+        <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true">热销新品</a>
+        <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true">海外仓热销产品</a>
+      </div>
+      <a class="nav-link active" href="javascript:void(0)"><i class="bi bi-graph-up-arrow"></i> 增长潜力品推荐</a>
+      <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true"><i class="bi bi-calendar3"></i> 季节性选品推荐</a>
+      <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true"><i class="bi bi-lightning-charge"></i> 即时趋势选品推荐</a>
+      <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true"><i class="bi bi-megaphone"></i> 政策事件选品推荐</a>
+      <a class="nav-link empty" href="javascript:void(0)" aria-disabled="true"><i class="bi bi-box-arrow-up-right"></i> 站外热销参考</a>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-toolbar">
+      <div>
+        <div class="eyebrow">增长策略推荐</div>
+        <h4 class="page-title">增长潜力品推荐</h4>
+        <p class="page-subtitle">基于卖家 zone、市场标签和标杆 listing，生成可执行的补强与拓展建议。</p>
+      </div>
+      <div class="toolbar-actions">
+        <span class="time-badge" id="sync-time-field"><i class="bi bi-clock-history"></i> 推荐状态：等待生成</span>
+        <button class="refresh-btn" id="refresh-btn" onclick="renderGrowthView()" title="重新生成推荐">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span id="refresh-btn-text">刷新推荐</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="growth-stack">
+      <div class="filter-panel growth-hero">
+        <div class="filter-title-row">
+          <div class="filter-title"><i class="bi bi-sliders"></i><span>筛选条件</span></div>
+          <button class="reset-btn" onclick="resetGrowthFilters()" title="恢复默认筛选">
+            <i class="bi bi-arrow-counterclockwise"></i><span>重置</span>
+          </button>
+        </div>
+        <div class="row g-3 growth-filter-grid">
+          <div class="col-xl-4 col-lg-6">
+            <label class="form-label mb-1">卖家 <span class="text-danger">*</span></label>
+            <div class="seller-search" id="growth-seller-search">
+              <input class="form-control form-control-sm" id="growth-seller-input" type="search" autocomplete="off" placeholder="输入卖家关键词搜索 ggp_account_name" oninput="handleSellerSearchInput()" onfocus="openSellerSearchMenu()" onkeydown="handleSellerSearchKeydown(event)">
+              <div class="seller-search-menu" id="growth-seller-menu"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="growth-status-bar">
+        <div class="growth-status-text">
+          <i class="bi bi-lightbulb"></i>
+          <span id="growth-status-text">请选择卖家后查看增长潜力品推荐</span>
+        </div>
+        <span class="growth-count-badge" id="growth-status-badge" style="display:none;">
+          <i class="bi bi-check-circle-fill"></i>
+          <span id="growth-status-badge-text"></span>
+        </span>
+      </div>
+
+      <section class="growth-panel">
+        <div class="growth-section-head">
+          <div class="growth-section-icon"><i class="bi bi-journal-richtext"></i></div>
+          <div><h5>总结</h5></div>
+        </div>
+        <div class="growth-summary-note" id="growth-summary-note"></div>
+        <div class="growth-summary-wrap">
+          <div class="table-responsive">
+            <table class="growth-summary-table">
+              <thead>
+                <tr>
+                  <th style="width:15%;">推品策略</th>
+                  <th style="width:25%;">Zone</th>
+                  <th style="width:11%;">市场判断</th>
+                  <th style="width:23%;">Top Listing 特征</th>
+                  <th style="width:26%;">建议动作</th>
+                </tr>
+              </thead>
+              <tbody id="growth-summary-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="growth-panel">
+        <div class="growth-section-head">
+          <div class="growth-section-icon"><i class="bi bi-fire"></i></div>
+          <div>
+            <h5>Top SKU</h5>
+            <p>可点击上方策略标签联动查看，也可直接通过下方筛选条件单独筛选当前最值得关注的前 20 个 SKU</p>
+          </div>
+        </div>
+        <div class="growth-strategy-tabs" id="growth-strategy-tabs"></div>
+        <div class="row g-3 growth-filter-grid mb-3">
+          <div class="col-xl-3 col-lg-6">
+            <label class="form-label mb-1">站点</label>
+            <div id="growth-site-filter"></div>
+          </div>
+          <div class="col-xl-3 col-lg-6">
+            <label class="form-label mb-1">品类</label>
+            <div id="growth-cate-filter"></div>
+          </div>
+          <div class="col-xl-3 col-lg-6">
+            <label class="form-label mb-1">价格带</label>
+            <div id="growth-price-filter"></div>
+          </div>
+          <div class="col-xl-3 col-lg-6">
+            <label class="form-label mb-1">排序</label>
+            <div id="growth-sort-filter"></div>
+          </div>
+        </div>
+        <div class="growth-product-tools">
+          <span class="growth-count-badge"><i class="bi bi-box-seam"></i><span id="growth-sku-count">0 个 SKU</span></span>
+        </div>
+        <div class="row g-1" id="growth-sku-grid"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+  var GROWTH_TYPE_ORDER = ['优势增长带', '已覆盖品类下的价格带机会', '关联拓展品类'];
+  var GROWTH_SORT_OPTIONS = [
+    { value: 'sales', label: '按日销量' },
+    { value: 'revenue', label: '按日销售额' },
+    { value: 'growth', label: '按增长' }
+  ];
+  var GROWTH_STATE = {
+    seller: '',
+    sellerSearchText: '',
+    sellerMatches: [],
+    sellerActiveIndex: -1,
+    data: { summaryNarrative: [], summaryRows: [], allSku: [] },
+    activeStrategyType: '',
+    skuFilters: { site: [], cate: [], price: [], sort: ['sales'] },
+    sellers: [],
+    activeSessionId: '',
+    activeRequestId: '',
+    pollTimer: null,
+    pollAttempts: 0,
+    maxPollAttempts: 60
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    initGrowthPage();
+    document.addEventListener('click', closeGrowthMultiSelects);
+  });
+
+  function initGrowthPage() {
+    callServer('getInitialData', null).then(function(data) {
+      GROWTH_STATE.sellers = normalizeSellerOptions(data.sellers || []);
+      renderSellerOptions();
+      if (GROWTH_STATE.sellers.length) {
+        GROWTH_STATE.seller = GROWTH_STATE.sellers[0].ggp_account_name || GROWTH_STATE.sellers[0].GGP_name;
+        document.getElementById('growth-seller-input').value = GROWTH_STATE.seller;
+      }
+      document.getElementById('growth-status-text').textContent = '请选择卖家后点击刷新推荐';
+    }).catch(function(error) {
+      document.getElementById('growth-status-text').textContent = '初始化失败：' + (error.message || error);
+    });
+  }
+
+  function normalizeSellerOptions(sellers) {
+    var seen = {};
+    return (sellers || []).map(function(seller) {
+      var name = '';
+      if (seller && typeof seller === 'object') {
+        name = seller.ggp_account_name || seller.GGP_name || seller.seller_name || '';
+      } else {
+        name = seller;
+      }
+      name = String(name || '').trim();
+      if (!name || name === '[object Object]' || name === 'ggp_account_name' || seen[name]) return null;
+      seen[name] = true;
+      return {
+        ggp_account_name: name,
+        GGP_name: name,
+        short_name: seller && typeof seller === 'object' ? String(seller.short_name || name).trim() : name
+      };
+    }).filter(Boolean);
+  }
+
+  function renderSellerOptions() {
+    GROWTH_STATE.sellerMatches = getSellerMatches('');
+    renderSellerSearchMenu();
+  }
+
+  function handleSellerSearchInput() {
+    var input = document.getElementById('growth-seller-input');
+    GROWTH_STATE.sellerSearchText = input.value.trim();
+    GROWTH_STATE.seller = '';
+    GROWTH_STATE.sellerActiveIndex = -1;
+    GROWTH_STATE.sellerMatches = getSellerMatches(GROWTH_STATE.sellerSearchText);
+    renderSellerSearchMenu();
+    openSellerSearchMenu();
+  }
+
+  function openSellerSearchMenu() {
+    GROWTH_STATE.sellerMatches = getSellerMatches(document.getElementById('growth-seller-input').value.trim());
+    renderSellerSearchMenu();
+    document.getElementById('growth-seller-search').classList.add('is-open');
+  }
+
+  function closeSellerSearchMenu() {
+    document.getElementById('growth-seller-search').classList.remove('is-open');
+  }
+
+  function handleSellerSearchKeydown(event) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      GROWTH_STATE.sellerActiveIndex = Math.min(GROWTH_STATE.sellerActiveIndex + 1, GROWTH_STATE.sellerMatches.length - 1);
+      renderSellerSearchMenu();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      GROWTH_STATE.sellerActiveIndex = Math.max(GROWTH_STATE.sellerActiveIndex - 1, 0);
+      renderSellerSearchMenu();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      var target = GROWTH_STATE.sellerMatches[GROWTH_STATE.sellerActiveIndex] || GROWTH_STATE.sellerMatches[0];
+      if (target) selectSeller(target.ggp_account_name || target.GGP_name || '');
+    } else if (event.key === 'Escape') {
+      closeSellerSearchMenu();
+    }
+  }
+
+  function getSellerMatches(keyword) {
+    var normalizedKeyword = normalizeSearchText(keyword);
+    var sellers = GROWTH_STATE.sellers || [];
+    if (!normalizedKeyword) return sellers.slice(0, 80);
+    return sellers.filter(function(seller) {
+      var name = seller.ggp_account_name || seller.GGP_name || '';
+      var shortName = seller.short_name || '';
+      return normalizeSearchText(name).indexOf(normalizedKeyword) >= 0 || normalizeSearchText(shortName).indexOf(normalizedKeyword) >= 0;
+    }).slice(0, 80);
+  }
+
+  function renderSellerSearchMenu() {
+    var menu = document.getElementById('growth-seller-menu');
+    var matches = GROWTH_STATE.sellerMatches || [];
+    if (!matches.length) {
+      menu.innerHTML = '<div class="seller-search-empty">没有匹配的卖家名称</div>';
+      return;
+    }
+    menu.innerHTML = matches.map(function(seller, index) {
+      var name = seller.ggp_account_name || seller.GGP_name || '';
+      var shortName = seller.short_name || '';
+      return '<button type="button" class="seller-search-option ' + (index === GROWTH_STATE.sellerActiveIndex ? 'is-active' : '') + '" data-seller="' + escapeAttr(name) + '" onmousedown="event.preventDefault(); selectSellerFromOption(this)" onclick="selectSellerFromOption(this)">' +
+        '<strong>' + escapeHtml(name) + '</strong>' +
+        (shortName && shortName !== name ? '<span class="seller-search-meta">' + escapeHtml(shortName) + '</span>' : '') +
+        '</button>';
+    }).join('');
+  }
+
+  function selectSellerFromOption(node) {
+    selectSeller(node.getAttribute('data-seller') || '');
+  }
+
+  function selectSeller(name) {
+    GROWTH_STATE.seller = name;
+    GROWTH_STATE.sellerSearchText = name;
+    document.getElementById('growth-seller-input').value = name;
+    closeSellerSearchMenu();
+    renderGrowthView();
+  }
+
+  function normalizeSearchText(value) {
+    return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function callServer(functionName, payload) {
+    var routes = {
+      getInitialData: { url: '/api/initial-data', method: 'GET' },
+      runGrowthRecommendation: { url: '/api/growth-recommendation', method: 'POST' }
+    };
+    var route = routes[functionName];
+    if (!route) return Promise.reject(new Error('Unknown API operation: ' + functionName));
+    return fetch(route.url, {
+      method: route.method,
+      headers: route.method === 'POST' ? { 'Content-Type': 'application/json' } : {},
+      body: route.method === 'POST' ? JSON.stringify(payload || {}) : undefined
+    }).then(function(response) {
+      return response.json().catch(function() { return {}; }).then(function(data) {
+        if (!response.ok) throw new Error(data.error || data.detail || ('HTTP ' + response.status));
+        return data;
+      });
+    });
+  }
+
+  function renderGrowthView() {
+    var seller = GROWTH_STATE.seller || document.getElementById('growth-seller-input').value.trim();
+    if (!seller) {
+      document.getElementById('growth-status-text').textContent = '请选择卖家后查看增长潜力品推荐';
+      return;
+    }
+    GROWTH_STATE.data = { summaryNarrative: [], summaryRows: [], allSku: [] };
+    renderGrowthStrategyTabs();
+    renderGrowthSummaryTable();
+    renderGrowthFilterControls();
+    renderGrowthSkuProducts();
+    setGrowthLoading(true);
+    document.getElementById('growth-status-badge').style.display = 'none';
+    document.getElementById('growth-status-text').textContent = '正在通过服务器 API 查询 DataSuite：' + seller;
+    document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-hourglass-split text-warning"></i> 推荐状态：DataSuite 查询中';
+    callServer('runGrowthRecommendation', { sellerName: seller }).then(function(result) {
+      if (!result) throw new Error('后端未返回推荐结果');
+      renderGrowthResult(result, seller);
+    }).catch(function(error) {
+      document.getElementById('growth-status-text').textContent = '推荐生成失败：' + (error.message || error);
+      document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> 推荐状态：失败';
+      setGrowthLoading(false);
+    });
+  }
+
+  function renderGrowthResult(result, seller) {
+    GROWTH_STATE.data = mapBackendResultToDemo(result);
+    document.getElementById('growth-status-text').textContent = '已按 ' + (result.seller_name || seller) + ' 生成增长潜力品推荐';
+    document.getElementById('growth-status-badge').style.display = 'inline-flex';
+    document.getElementById('growth-status-badge-text').textContent = '推荐结果已生成 · ' + GROWTH_STATE.data.allSku.length + ' 个商品';
+    document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-stars text-success"></i> 推荐状态：结果已生成';
+    GROWTH_STATE.activeStrategyType = '';
+    GROWTH_STATE.skuFilters = { site: [], cate: [], price: [], sort: ['sales'] };
+    renderGrowthStrategyTabs();
+    renderGrowthSummaryTable();
+    renderGrowthFilterControls();
+    renderGrowthSkuProducts();
+    setGrowthLoading(false);
+  }
+
+  function setGrowthLoading(isLoading) {
+    var btn = document.getElementById('refresh-btn');
+    var text = document.getElementById('refresh-btn-text');
+    btn.classList.toggle('is-loading', isLoading);
+    text.textContent = isLoading ? '生成中' : '刷新推荐';
+  }
+
+  function applyGrowthFilters() {
+    GROWTH_STATE.seller = document.getElementById('growth-seller-input').value.trim();
+    renderGrowthView();
+  }
+
+  function resetGrowthFilters() {
+    if (GROWTH_STATE.sellers.length) {
+      GROWTH_STATE.seller = GROWTH_STATE.sellers[0].ggp_account_name || GROWTH_STATE.sellers[0].GGP_name;
+      document.getElementById('growth-seller-input').value = GROWTH_STATE.seller;
+    }
+    renderGrowthView();
+  }
+
+  function mapBackendResultToDemo(result) {
+    var zones = result.zones || [];
+    var sellerSummary = result.seller_summary || {};
+    var summaryRows = zones.map(function(zone) {
+      var summary = zone.llm_summary || {};
+      var region = zone.region || zone.grass_region || '';
+      var l3 = zone.l3 || zone.L3 || '';
+      var priceBand = zone.price_band || zone.Price_band || '';
+      return {
+        type: normalizeStrategyType(zone.strategy_type),
+        zone: region + ' 站 / ' + l3 + ' / ' + priceBand,
+        ocean: zone.market_type === '红海' ? 'red' : 'blue',
+        oceanLabel: zone.market_type || '蓝海',
+        zoneNote: summary.zone_summary || zone.seller_status_summary || '',
+        features: splitFeatureText(summary.zone_feature_summary || ''),
+        action: summary.action_recommendation || ''
+      };
+    });
+    var allSku = [];
+    zones.forEach(function(zone) {
+      (zone.top_listings || []).forEach(function(item) {
+        allSku.push({
+          name: item.item || '',
+          link: item.item_link || '',
+          price: '$ ' + Number(item.asp || item.dim_item_price_usd || 0).toFixed(2),
+          localPrice: '$ ' + Number(item.dim_item_price_usd || item.asp || 0).toFixed(2),
+          sales: Number(item.ado || 0),
+          revenue: Number(item.adg || 0),
+          growth: Math.round(Number(item.ado_mom_mtd || 0) * 100),
+          country: item.region || zone.region || '',
+          site: item.region || zone.region || '',
+          cate: item.l3 || item.L3 || zone.l3 || zone.L3 || '',
+          priceKey: priceBandKey(item.price_band || zone.price_band || zone.Price_band),
+          strategyType: normalizeStrategyType(zone.strategy_type),
+          officialLabel: item.is_official_shop ? '[Mall]' : '[Non-Mall]',
+          img: item.item_image || 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=900'
+        });
+      });
+    });
+    return {
+      summaryNarrative: [
+        sellerSummary.seller_overall_summary || '',
+        sellerSummary.seller_priority_direction || '',
+        sellerSummary.seller_strategy_overview || ''
+      ].filter(Boolean),
+      summaryRows: summaryRows,
+      allSku: allSku
+    };
+  }
+
+  function normalizeStrategyType(type) {
+    if (type === '价格带补强机会') return '已覆盖品类下的价格带机会';
+    if (type === '关联拓展机会') return '关联拓展品类';
+    return type || '优势增长带';
+  }
+
+  function splitFeatureText(text) {
+    var parts = String(text || '').split(/[。；;]/).map(function(item) { return item.trim(); }).filter(Boolean);
+    return parts.slice(0, 3);
+  }
+
+  function priceBandKey(priceBand) {
+    if (priceBand === '$0-$5') return '0-5';
+    if (priceBand === '$5-$10' || priceBand === '$8-$15') return '5-10';
+    if (priceBand === '$20-$35' || priceBand === '$18-$30' || priceBand === '$18-$28') return '20-50';
+    return '10-20';
+  }
+
+  function renderGrowthSummaryTable() {
+    var rows = GROWTH_STATE.data.summaryRows || [];
+    var activeType = GROWTH_STATE.activeStrategyType || '';
+    document.getElementById('growth-summary-note').innerHTML = (GROWTH_STATE.data.summaryNarrative || []).map(function(text) {
+      return '<p>• ' + escapeHtml(text) + '</p>';
+    }).join('');
+    var grouped = GROWTH_TYPE_ORDER.map(function(type) {
+      return { type: type, items: rows.filter(function(row) { return row.type === type; }) };
+    }).filter(function(group) { return group.items.length > 0; });
+    var html = '';
+    grouped.forEach(function(group) {
+      group.items.forEach(function(row, index) {
+        var features = row.features.map(function(feature) { return '<li>' + escapeHtml(feature) + '</li>'; }).join('');
+        html += '<tr>' +
+          (index === 0 ? '<td rowspan="' + group.items.length + '"><button type="button" class="growth-summary-type-button ' + (group.type === activeType ? 'active' : '') + '" data-type="' + escapeHtml(group.type) + '" onclick="setGrowthStrategyType(this.dataset.type)">' + escapeHtml(group.type) + '</button></td>' : '') +
+          '<td><div class="growth-summary-zone"><div class="growth-zone-name">' + escapeHtml(row.zone) + '</div><div class="growth-zone-note">' + escapeHtml(row.zoneNote) + '</div></div></td>' +
+          '<td><span class="growth-zone-badge ' + (row.ocean === 'blue' ? 'blue' : 'red') + '">' + escapeHtml(row.oceanLabel) + '</span></td>' +
+          '<td>' + (features ? '<ul class="growth-feature-list">' + features + '</ul>' : '') + '</td>' +
+          '<td>' + escapeHtml(row.action) + '</td>' +
+          '</tr>';
+      });
+    });
+    document.getElementById('growth-summary-body').innerHTML = html;
+  }
+
+  function renderGrowthStrategyTabs() {
+    document.getElementById('growth-strategy-tabs').innerHTML = GROWTH_TYPE_ORDER.map(function(type) {
+      return '<button type="button" class="growth-strategy-tab ' + (type === GROWTH_STATE.activeStrategyType ? 'active' : '') + '" data-type="' + escapeHtml(type) + '" onclick="setGrowthStrategyType(this.dataset.type)">' + escapeHtml(type) + '</button>';
+    }).join('');
+  }
+
+  function setGrowthStrategyType(type) {
+    GROWTH_STATE.activeStrategyType = GROWTH_STATE.activeStrategyType === type ? '' : type;
+    renderGrowthStrategyTabs();
+    renderGrowthSummaryTable();
+    renderGrowthSkuProducts();
+  }
+
+  function getGrowthFilterOptions(filterName) {
+    var items = GROWTH_STATE.data.allSku || [];
+    if (filterName === 'sort') return GROWTH_SORT_OPTIONS.slice();
+    if (filterName === 'site') return uniqueOptions(items.map(function(item) { return item.site; }));
+    if (filterName === 'cate') return uniqueOptions(items.map(function(item) { return item.cate; }));
+    if (filterName === 'price') return [
+      { value: '0-5', label: '$0 - $5' },
+      { value: '5-10', label: '$5 - $10' },
+      { value: '10-20', label: '$10 - $20' },
+      { value: '20-50', label: '$20 - $50' }
+    ].filter(function(option) { return items.some(function(item) { return item.priceKey === option.value; }); });
+    return [];
+  }
+
+  function uniqueOptions(values) {
+    return Array.from(new Set(values.filter(Boolean))).sort().map(function(value) {
+      return { value: value, label: value };
+    });
+  }
+
+  function renderGrowthFilterControls() {
+    renderGrowthMultiSelect('site', 'growth-site-filter');
+    renderGrowthMultiSelect('cate', 'growth-cate-filter');
+    renderGrowthMultiSelect('price', 'growth-price-filter');
+    renderGrowthMultiSelect('sort', 'growth-sort-filter');
+  }
+
+  function renderGrowthMultiSelect(filterName, mountId) {
+    var mount = document.getElementById(mountId);
+    var options = getGrowthFilterOptions(filterName);
+    var selectedValues = (GROWTH_STATE.skuFilters[filterName] || []).filter(function(value) {
+      return options.some(function(option) { return option.value === value; });
+    });
+    GROWTH_STATE.skuFilters[filterName] = selectedValues;
+    var label = getGrowthSelectedLabel(filterName, options, selectedValues);
+    var optionsHtml = options.map(function(option) {
+      var checked = selectedValues.indexOf(option.value) >= 0;
+      return '<label class="growth-multiselect-option" onclick="event.stopPropagation()"><input type="checkbox" ' + (checked ? 'checked' : '') + ' onchange="toggleGrowthFilterOption(\'' + escapeAttr(filterName) + '\', \'' + escapeAttr(option.value) + '\')"><span>' + escapeHtml(option.label) + '</span></label>';
+    }).join('');
+    mount.innerHTML = '<div class="growth-multiselect" id="growth-multiselect-' + escapeHtml(filterName) + '">' +
+      '<button type="button" class="growth-multiselect-trigger" onclick="toggleGrowthMultiSelectMenu(event, \'' + escapeAttr(filterName) + '\')"><span class="growth-multiselect-label">' + escapeHtml(label) + '</span><i class="bi bi-chevron-down"></i></button>' +
+      '<div class="growth-multiselect-menu" onclick="event.stopPropagation()">' + optionsHtml + '</div></div>';
+  }
+
+  function getGrowthSelectedLabel(filterName, options, selectedValues) {
+    if (!selectedValues.length) {
+      if (filterName === 'site') return '全部站点';
+      if (filterName === 'cate') return '全部品类';
+      if (filterName === 'price') return '全部价格带';
+      return '按日销量';
+    }
+    var selectedOptions = options.filter(function(option) { return selectedValues.indexOf(option.value) >= 0; });
+    if (selectedOptions.length === 1) return selectedOptions[0].label;
+    return selectedOptions[0].label + ' +' + (selectedOptions.length - 1);
+  }
+
+  function toggleGrowthMultiSelectMenu(event, filterName) {
+    event.stopPropagation();
+    document.querySelectorAll('.growth-multiselect').forEach(function(node) {
+      if (node.id !== 'growth-multiselect-' + filterName) node.classList.remove('is-open');
+    });
+    var target = document.getElementById('growth-multiselect-' + filterName);
+    if (target) target.classList.toggle('is-open');
+  }
+
+  function toggleGrowthFilterOption(filterName, value) {
+    var current = GROWTH_STATE.skuFilters[filterName] ? GROWTH_STATE.skuFilters[filterName].slice() : [];
+    var index = current.indexOf(value);
+    if (index >= 0) current.splice(index, 1);
+    else current.push(value);
+    GROWTH_STATE.skuFilters[filterName] = current;
+    renderGrowthFilterControls();
+    renderGrowthSkuProducts();
+  }
+
+  function closeGrowthMultiSelects(event) {
+    document.querySelectorAll('.growth-multiselect.is-open').forEach(function(node) {
+      node.classList.remove('is-open');
+    });
+    var sellerSearch = document.getElementById('growth-seller-search');
+    if (sellerSearch && (!event || !sellerSearch.contains(event.target))) {
+      sellerSearch.classList.remove('is-open');
+    }
+  }
+
+  function renderGrowthSkuProducts() {
+    var filters = GROWTH_STATE.skuFilters || {};
+    var items = (GROWTH_STATE.data.allSku || []).filter(function(item) {
+      return (!GROWTH_STATE.activeStrategyType || item.strategyType === GROWTH_STATE.activeStrategyType) &&
+        (!(filters.site || []).length || filters.site.indexOf(item.site) >= 0) &&
+        (!(filters.cate || []).length || filters.cate.indexOf(item.cate) >= 0) &&
+        (!(filters.price || []).length || filters.price.indexOf(item.priceKey) >= 0);
+    });
+    items = sortGrowthItems(items, (filters.sort || ['sales'])[0] || 'sales').slice(0, 20);
+    document.getElementById('growth-sku-count').textContent = items.length + ' 个 SKU';
+    document.getElementById('growth-sku-grid').innerHTML = items.length ? items.map(renderGrowthProductCard).join('') : '<div class="growth-empty-state"><strong>暂无标杆 SKU</strong></div>';
+  }
+
+  function sortGrowthItems(items, value) {
+    var list = items.slice();
+    if (value === 'revenue') list.sort(function(a, b) { return Number(b.revenue) - Number(a.revenue); });
+    else if (value === 'growth') list.sort(function(a, b) { return Number(b.growth) - Number(a.growth); });
+    else list.sort(function(a, b) { return Number(b.sales) - Number(a.sales); });
+    return list;
+  }
+
+  function renderGrowthProductCard(item, index) {
+    var titleHtml = item.link ?
+      '<a class="product-title" href="' + escapeHtml(item.link) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(item.name) + '">' + escapeHtml(item.name) + '</a>' :
+      '<div class="product-title" title="' + escapeHtml(item.name) + '">' + escapeHtml(item.name) + '</div>';
+    return '<div class="col-ecommerce-8-grid"><div class="product-card-v2">' +
+      '<div class="product-image-wrap"><span class="top-badge">TOP ' + (index + 1) + '</span><span class="country-badge">' + escapeHtml(item.country) + '</span><img src="' + escapeHtml(item.img) + '" alt="' + escapeHtml(item.name) + '"></div>' +
+      '<div class="product-body"><div class="product-title-row"><span class="shop-tag">' + escapeHtml(item.officialLabel || '[Mall]') + '</span><div class="title-wrap">' + titleHtml + '<button class="copy-title-btn" onclick="copyProductTitle(event, \'' + escapeAttr(item.name) + '\')" title="复制完整标题"><i class="bi bi-clipboard"></i></button></div></div>' +
+      '<div class="price-line"><span class="usd-price">' + escapeHtml(item.price) + '</span><span class="local-price">(' + escapeHtml(item.localPrice) + ')</span></div>' +
+      '<div class="stat-line">日销量：' + escapeHtml(formatSalesRange(item.sales)) + '</div><div class="stat-line">日销售额：' + escapeHtml(formatRevenueRange(item.revenue)) + '</div><div class="meta-line">类目：' + escapeHtml(item.cate) + '</div><div class="meta-line">30天增速：+' + escapeHtml(item.growth) + '%</div>' +
+      '<div class="card-actions"><button class="tool-btn" onclick="openImageSearch(event, \'' + escapeAttr(item.img) + '\')"><i class="bi bi-camera"></i><span>图搜</span></button></div></div></div></div>';
+  }
+
+  function formatSalesRange(value) {
+    var number = Number(value || 0);
+    if (number < 1) return '0-1';
+    if (number < 3) return '1-3';
+    if (number < 5) return '3-5';
+    if (number < 10) return '5-10';
+    if (number < 20) return '10-20';
+    return '20+';
+  }
+
+  function formatRevenueRange(value) {
+    var number = Number(value || 0);
+    if (number < 10) return '$0-10';
+    if (number < 50) return '$10-50';
+    if (number < 100) return '$50-100';
+    if (number < 300) return '$100-300';
+    if (number < 500) return '$300-500';
+    return '$500+';
+  }
+
+  function copyProductTitle(event, title) {
+    event.stopPropagation();
+    if (navigator.clipboard) navigator.clipboard.writeText(title);
+  }
+
+  function openImageSearch(event, imageUrl) {
+    event.stopPropagation();
+    window.open(build1688ImageSearchUrl(imageUrl), '_blank', 'noopener,noreferrer');
+  }
+
+  function build1688ImageSearchUrl(imageUrl) {
+    return 'https://s.1688.com/youyuan/index.htm?imageAddress=' + encodeURIComponent(imageUrl || '');
+  }
+
+  function buildLocalResult(sellerName) {
+    var imagePool = [
+      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=900&q=80',
+      'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=900&q=80',
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=80',
+      'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=900&q=80'
+    ];
+    var zones = [
+      { strategy_type: '优势增长带', market_type: '蓝海', region: 'MY', L1: '女装', L2: '连衣裙', L3: '碎花连衣裙', Price_band: '$10-$20' },
+      { strategy_type: '关联拓展机会', market_type: '蓝海', region: 'MY', L1: '女装', L2: '半身裙', L3: 'A字裙', Price_band: '$8-$15' },
+      { strategy_type: '价格带补强机会', market_type: '红海', region: 'SG', L1: '女装', L2: '上衣', L3: '针织上衣', Price_band: '$18-$28' }
+    ].map(function(zone, zoneIndex) {
+      zone.llm_summary = {
+        zone_summary: zone.region + ' 站 ' + zone.L3 + ' ' + zone.Price_band + ' 具备增长机会。',
+        listing_feature_summary: '浅色系、轻薄面料、收腰版型集中出现在 Top listing 中。',
+        action_recommendation: zone.strategy_type === '关联拓展机会' ? '建议先用小批量试款切入，观察 ADO 与周增速后再扩 SKU。' : '建议优先补强 2-3 个相邻款式，保持价格带和主图风格一致。'
+      };
+      zone.top_listings = Array.from({ length: 6 }).map(function(_, itemIndex) {
+        return {
+          item: zone.L3 + ' 标杆款 ' + (itemIndex + 1),
+          item_image: imagePool[(zoneIndex + itemIndex) % imagePool.length],
+          region: zone.region,
+          L3: zone.L3,
+          price_band: zone.Price_band,
+          asp: 10 + zoneIndex * 3 + itemIndex,
+          dim_item_price_usd: 10 + zoneIndex * 3 + itemIndex,
+          ado: 100 + zoneIndex * 20 + itemIndex * 8,
+          adg: 1200 + zoneIndex * 200 + itemIndex * 120,
+          ado_mom_mtd: 0.13 + itemIndex * 0.01,
+          is_official_shop: itemIndex % 3 === 0
+        };
+      });
+      return zone;
+    });
+    return {
+      seller_name: sellerName,
+      seller_summary: {
+        seller_overall_summary: sellerName + ' 当前适合采用主力 zone 补强和相邻 zone 试款的组合策略。',
+        seller_priority_direction: '优先推进 MY / 碎花连衣裙 / $10-$20。',
+        seller_strategy_overview: '先把已验证 zone 做深，再用关联 L3 扩宽货盘。'
+      },
+      zones: zones
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function escapeAttr(value) {
+    return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/\n/g, ' ');
+  }
+</script>
+</body>
+</html>

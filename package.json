@@ -1,0 +1,14 @@
+{
+  "name": "seller-growth-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Seller growth recommendation web app backed directly by DataSuite API.",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

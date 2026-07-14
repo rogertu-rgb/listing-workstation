@@ -1,0 +1,14 @@
+services:
+  seller-growth-api:
+    build: .
+    container_name: seller-growth-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - seller-growth-data:/app/data
+
+volumes:
+  seller-growth-data:
