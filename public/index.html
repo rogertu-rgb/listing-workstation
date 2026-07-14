@@ -1032,10 +1032,12 @@
     return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
+  var APP_BASE_PATH = window.location.pathname.indexOf('/listing_workstation') === 0 ? '/listing_workstation' : '';
+
   function callServer(functionName, payload) {
     var routes = {
-      getInitialData: { url: '/api/initial-data', method: 'GET' },
-      runGrowthRecommendation: { url: '/api/growth-recommendation', method: 'POST' }
+      getInitialData: { url: APP_BASE_PATH + '/api/initial-data', method: 'GET' },
+      runGrowthRecommendation: { url: APP_BASE_PATH + '/api/growth-recommendation', method: 'POST' }
     };
     var route = routes[functionName];
     if (!route) return Promise.reject(new Error('Unknown API operation: ' + functionName));
