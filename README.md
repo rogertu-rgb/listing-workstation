@@ -6,6 +6,9 @@
 
 ```text
 Browser
+  │ HTTP / HTTPS
+  ▼
+Nginx :80 (or company Ingress)
   ├─ GET  /api/initial-data
   └─ POST /api/growth-recommendation
              │
@@ -16,9 +19,9 @@ Browser
          DataSuite API
 ```
 
-服务启动后会读取本地卖家缓存，并在后台请求一次全量数据。之后每 24 小时重新请求 DataSuite，从返回行中提取唯一卖家并原子更新 `/app/data/sellers.json`。即使刷新失败，服务也会保留上一次成功的列表。
+服务启动后会读取本地卖家缓存，并在后台请求一次卖家数据。之后每 24 小时重新请求 DataSuite，从返回行中提取唯一卖家并原子更新 `/app/data/sellers.json`。即使刷新失败，服务也会保留上一次成功的列表。
 
-默认用空的 `request_param_1` 获取全量卖家。如果 DataSuite 对全量查询使用其他参数，可通过 `SELLER_REFRESH_QUERY_VALUE` 调整。
+默认会用空的 `request_param_1` 尝试获取卖家。当 DataSuite 接口不支持空参数枚举时，页面仍允许手动输入完整 GGP Name；正式的每日卖家目录需另行配置可访问的 `seller_list` 数据源。
 
 ## API
 
@@ -56,7 +59,7 @@ npm test
 npm start
 ```
 
-打开 `http://localhost:8080`，健康检查为 `http://localhost:8080/api/health`。
+直接运行 Node 时打开 `http://localhost:8080`，健康检查为 `http://localhost:8080/api/health`。
 
 ## Docker 部署
 
@@ -64,10 +67,18 @@ npm start
 docker compose up -d --build
 docker compose ps
 docker compose logs --tail=100 listing-workstation
+curl -fsS http://127.0.0.1/nginx-health
+curl -fsS http://127.0.0.1/api/health
 curl -fsS http://127.0.0.1:8080/api/health
 ```
 
-Compose 将宿主机 `8080` 映射到容器 `8080`，并使用命名卷持久化每日卖家缓存。容器设置为 `restart: unless-stopped`，服务器重启后会自动恢复。
+Compose 将 Nginx 映射到宿主机 `80` 端口，Node 服务的 `8080` 只绑定在宿主机 `127.0.0.1`，并使用命名卷持久化每日卖家缓存。两个容器都设置为 `restart: unless-stopped`，服务器重启后会自动恢复。
+
+## Nginx 与 HTTPS
+
+`nginx/default.conf` 使用一个 upstream 转发页面和 `/api/*`，因为它们都由同一个 Node 服务提供。Nginx 的超时时间略高于 DataSuite 最长查询时间，避免长查询被代理提前切断。
+
+推荐由公司 Ingress 绑定内部域名、处理 HTTPS 证书和 SSO，再将流量转发到该服务器的 `80` 端口。如果必须在该服务器直接终止 HTTPS，需先获得正式域名和证书，再增加 `listen 443 ssl`配置；不要将证书或私钥提交到 Git。
 
 ## 上线验证
 
