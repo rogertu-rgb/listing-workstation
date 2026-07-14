@@ -2,6 +2,10 @@
 
 增长潜力品推荐网页的独立服务器版本。浏览器直接调用本服务，本服务再调用 DataSuite API；不再依赖 Google Apps Script、Google Sheet 队列或 Python Bridge。
 
+## 团队部署教程
+
+从 Vibe Coding 原型、API 改造、凭证管理、GitHub、Docker、服务器、Nginx、公司域名到分层验收的完整实战说明，参见 [VIBE_CODING_TO_SERVER_PLAYBOOK_ZH.md](VIBE_CODING_TO_SERVER_PLAYBOOK_ZH.md)。
+
 ## 架构
 
 ```text
