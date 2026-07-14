@@ -54,7 +54,7 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
     if (request.method === 'GET' && url.pathname === '/api/health') {
-      return sendJson(response, 200, { ok: true, service: 'seller-growth-api', dataSuiteConfigured: dataSuiteConfigured(config), sellerCache: sellerCache.status() });
+      return sendJson(response, 200, { ok: true, service: 'listing-workstation', dataSuiteConfigured: dataSuiteConfigured(config), sellerCache: sellerCache.status() });
     }
     if (request.method === 'GET' && url.pathname === '/api/initial-data') {
       const cache = sellerCache.status();
@@ -91,7 +91,7 @@ const server = createServer(async (request, response) => {
 await sellerCache.load();
 if (dataSuiteConfigured(config)) sellerCache.refresh().catch((error) => console.error(`Initial seller refresh failed: ${error.message}`));
 sellerCache.start();
-server.listen(config.port, '0.0.0.0', () => console.log(`seller-growth-api listening on 0.0.0.0:${config.port}`));
+server.listen(config.port, '0.0.0.0', () => console.log(`listing-workstation listening on 0.0.0.0:${config.port}`));
 
 function shutdown() { server.close(() => process.exit(0)); }
 process.on('SIGTERM', shutdown);

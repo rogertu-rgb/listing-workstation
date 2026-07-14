@@ -1,14 +1,14 @@
 services:
-  seller-growth-api:
+  listing-workstation:
     build: .
-    container_name: seller-growth-api
+    container_name: listing-workstation
     restart: unless-stopped
     env_file:
       - .env
     ports:
       - "8080:8080"
     volumes:
-      - seller-growth-data:/app/data
+      - listing-workstation-data:/app/data
 
 volumes:
-  seller-growth-data:
+  listing-workstation-data:

@@ -1,4 +1,4 @@
-# Seller Growth API
+# Listing Workstation
 
 增长潜力品推荐网页的独立服务器版本。浏览器直接调用本服务，本服务再调用 DataSuite API；不再依赖 Google Apps Script、Google Sheet 队列或 Python Bridge。
 
@@ -63,7 +63,7 @@ npm start
 ```sh
 docker compose up -d --build
 docker compose ps
-docker compose logs --tail=100 seller-growth-api
+docker compose logs --tail=100 listing-workstation
 curl -fsS http://127.0.0.1:8080/api/health
 ```
 

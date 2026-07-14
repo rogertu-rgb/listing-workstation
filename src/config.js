@@ -13,7 +13,7 @@ export function loadConfig() {
       appKey: process.env.DATASUITE_APP_KEY || '',
       appSecret: process.env.DATASUITE_APP_SECRET || '',
       scope: (process.env.DATASUITE_SCOPE || 'cncbbi_general.stat_ggp_item_traffic_ads_nd_all_site_top50_for_m1').split(',').map((value) => value.trim()).filter(Boolean),
-      systemName: process.env.DATASUITE_SYSTEM_NAME || 'seller-growth-api',
+      systemName: process.env.DATASUITE_SYSTEM_NAME || 'listing-workstation',
       endUser: process.env.DATASUITE_END_USER || '',
       prestoQueue: process.env.DATASUITE_PRESTO_QUEUE || '',
       pollIntervalMs: numberFromEnv('DATASUITE_POLL_INTERVAL_MS', 2000),
