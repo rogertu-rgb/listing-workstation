@@ -246,6 +246,43 @@
 
     .seller-search {
       position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .seller-query-row {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .query-btn {
+      min-width: 96px;
+      min-height: 38px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--brand);
+      color: #fffaf8;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      white-space: nowrap;
+      transition: background 0.18s ease, opacity 0.18s ease;
+    }
+
+    .query-btn:hover { background: var(--brand-dark); }
+    .query-btn:focus-visible { outline: 3px solid rgba(238, 77, 45, 0.24); outline-offset: 2px; }
+    .query-btn:disabled { cursor: wait; opacity: 0.7; }
+
+    .query-guidance {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
     }
 
     .seller-search-menu {
@@ -630,6 +667,8 @@
       .main-content { margin-left: 0; padding: 16px; }
       .page-toolbar, .growth-status-bar, .growth-product-tools { flex-direction: column; align-items: stretch; }
       .col-ecommerce-8-grid { width: 50%; flex: 0 0 50%; max-width: 50%; }
+      .seller-query-row { flex-direction: column; }
+      .query-btn { width: 100%; }
     }
 
     .product-card-v2 {
@@ -739,9 +778,9 @@
       </div>
       <div class="toolbar-actions">
         <span class="time-badge" id="sync-time-field"><i class="bi bi-clock-history"></i> 推荐状态：等待生成</span>
-        <button class="refresh-btn" id="refresh-btn" onclick="renderGrowthView()" title="重新生成推荐">
+        <button class="refresh-btn" id="refresh-btn" onclick="queryGrowthRecommendation()" title="使用当前 GGP Name 重新查询">
           <i class="bi bi-arrow-clockwise"></i>
-          <span id="refresh-btn-text">刷新推荐</span>
+          <span id="refresh-btn-text">重新查询</span>
         </button>
       </div>
     </div>
@@ -755,12 +794,18 @@
           </button>
         </div>
         <div class="row g-3 growth-filter-grid">
-          <div class="col-xl-4 col-lg-6">
-            <label class="form-label mb-1">卖家 <span class="text-danger">*</span></label>
-            <div class="seller-search" id="growth-seller-search">
-              <input class="form-control form-control-sm" id="growth-seller-input" type="search" autocomplete="off" placeholder="输入卖家关键词搜索 ggp_account_name" oninput="handleSellerSearchInput()" onfocus="openSellerSearchMenu()" onkeydown="handleSellerSearchKeydown(event)">
-              <div class="seller-search-menu" id="growth-seller-menu"></div>
+          <div class="col-xl-7 col-lg-9">
+            <label class="form-label mb-1" for="growth-seller-input">GGP Name <span class="text-danger">*</span></label>
+            <div class="seller-query-row">
+              <div class="seller-search" id="growth-seller-search">
+                <input class="form-control form-control-sm" id="growth-seller-input" type="search" autocomplete="off" placeholder="输入完整 GGP Name，例如：深圳市菲德越科技有限公司 - GGP" oninput="handleSellerSearchInput()" onfocus="openSellerSearchMenu()" onkeydown="handleSellerSearchKeydown(event)">
+                <div class="seller-search-menu" id="growth-seller-menu"></div>
+              </div>
+              <button class="query-btn" id="growth-query-btn" type="button" onclick="queryGrowthRecommendation()">
+                <i class="bi bi-search"></i><span id="growth-query-btn-text">查询</span>
+              </button>
             </div>
+            <div class="query-guidance">查询由按钮明确触发，通常需要 10–30 秒；选择候选项不会自动调用接口。</div>
           </div>
         </div>
       </div>
@@ -856,7 +901,8 @@
     activeRequestId: '',
     pollTimer: null,
     pollAttempts: 0,
-    maxPollAttempts: 60
+    maxPollAttempts: 60,
+    querySequence: 0
   };
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -872,7 +918,7 @@
         GROWTH_STATE.seller = GROWTH_STATE.sellers[0].ggp_account_name || GROWTH_STATE.sellers[0].GGP_name;
         document.getElementById('growth-seller-input').value = GROWTH_STATE.seller;
       }
-      document.getElementById('growth-status-text').textContent = '请选择卖家后点击刷新推荐';
+      document.getElementById('growth-status-text').textContent = '请输入完整 GGP Name，然后点击查询';
     }).catch(function(error) {
       document.getElementById('growth-status-text').textContent = '初始化失败：' + (error.message || error);
     });
@@ -936,6 +982,7 @@
       event.preventDefault();
       var target = GROWTH_STATE.sellerMatches[GROWTH_STATE.sellerActiveIndex] || GROWTH_STATE.sellerMatches[0];
       if (target) selectSeller(target.ggp_account_name || target.GGP_name || '');
+      queryGrowthRecommendation();
     } else if (event.key === 'Escape') {
       closeSellerSearchMenu();
     }
@@ -956,7 +1003,7 @@
     var menu = document.getElementById('growth-seller-menu');
     var matches = GROWTH_STATE.sellerMatches || [];
     if (!matches.length) {
-      menu.innerHTML = '<div class="seller-search-empty">没有匹配的卖家名称</div>';
+      menu.innerHTML = '<div class="seller-search-empty">可直接输入完整 GGP Name，然后点击查询</div>';
       return;
     }
     menu.innerHTML = matches.map(function(seller, index) {
@@ -978,7 +1025,7 @@
     GROWTH_STATE.sellerSearchText = name;
     document.getElementById('growth-seller-input').value = name;
     closeSellerSearchMenu();
-    renderGrowthView();
+    document.getElementById('growth-status-text').textContent = '已选择 ' + name + '，点击查询后调用 DataSuite';
   }
 
   function normalizeSearchText(value) {
@@ -1004,12 +1051,22 @@
     });
   }
 
+  function queryGrowthRecommendation() {
+    GROWTH_STATE.seller = document.getElementById('growth-seller-input').value.trim();
+    closeSellerSearchMenu();
+    renderGrowthView();
+  }
+
   function renderGrowthView() {
-    var seller = GROWTH_STATE.seller || document.getElementById('growth-seller-input').value.trim();
+    var seller = document.getElementById('growth-seller-input').value.trim();
     if (!seller) {
-      document.getElementById('growth-status-text').textContent = '请选择卖家后查看增长潜力品推荐';
+      document.getElementById('growth-status-text').textContent = '请输入完整 GGP Name 后再查询';
+      document.getElementById('growth-seller-input').focus();
       return;
     }
+    GROWTH_STATE.seller = seller;
+    var queryId = ++GROWTH_STATE.querySequence;
+    var startedAt = Date.now();
     GROWTH_STATE.data = { summaryNarrative: [], summaryRows: [], allSku: [] };
     renderGrowthStrategyTabs();
     renderGrowthSummaryTable();
@@ -1018,23 +1075,27 @@
     setGrowthLoading(true);
     document.getElementById('growth-status-badge').style.display = 'none';
     document.getElementById('growth-status-text').textContent = '正在通过服务器 API 查询 DataSuite：' + seller;
-    document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-hourglass-split text-warning"></i> 推荐状态：DataSuite 查询中';
+    document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-hourglass-split text-warning"></i> 查询状态：DataSuite 处理中';
     callServer('runGrowthRecommendation', { sellerName: seller }).then(function(result) {
+      if (queryId !== GROWTH_STATE.querySequence) return;
       if (!result) throw new Error('后端未返回推荐结果');
-      renderGrowthResult(result, seller);
+      renderGrowthResult(result, seller, Date.now() - startedAt);
     }).catch(function(error) {
+      if (queryId !== GROWTH_STATE.querySequence) return;
       document.getElementById('growth-status-text').textContent = '推荐生成失败：' + (error.message || error);
-      document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> 推荐状态：失败';
+      document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> 查询状态：失败';
       setGrowthLoading(false);
     });
   }
 
-  function renderGrowthResult(result, seller) {
+  function renderGrowthResult(result, seller, elapsedMs) {
     GROWTH_STATE.data = mapBackendResultToDemo(result);
-    document.getElementById('growth-status-text').textContent = '已按 ' + (result.seller_name || seller) + ' 生成增长潜力品推荐';
+    var meta = result.meta || {};
+    var seconds = Math.max(1, Math.round(Number(elapsedMs || 0) / 1000));
+    document.getElementById('growth-status-text').textContent = '查询完成：' + (result.seller_name || seller) + '，返回 ' + Number(meta.source_rows || 0) + ' 行、' + Number(meta.zone_count || 0) + ' 个 Zone，用时 ' + seconds + ' 秒';
     document.getElementById('growth-status-badge').style.display = 'inline-flex';
     document.getElementById('growth-status-badge-text').textContent = '推荐结果已生成 · ' + GROWTH_STATE.data.allSku.length + ' 个商品';
-    document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-stars text-success"></i> 推荐状态：结果已生成';
+    document.getElementById('sync-time-field').innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> 查询状态：成功';
     GROWTH_STATE.activeStrategyType = '';
     GROWTH_STATE.skuFilters = { site: [], cate: [], price: [], sort: ['sales'] };
     renderGrowthStrategyTabs();
@@ -1047,13 +1108,17 @@
   function setGrowthLoading(isLoading) {
     var btn = document.getElementById('refresh-btn');
     var text = document.getElementById('refresh-btn-text');
+    var queryBtn = document.getElementById('growth-query-btn');
+    var queryText = document.getElementById('growth-query-btn-text');
     btn.classList.toggle('is-loading', isLoading);
-    text.textContent = isLoading ? '生成中' : '刷新推荐';
+    btn.disabled = isLoading;
+    queryBtn.disabled = isLoading;
+    text.textContent = isLoading ? '查询中' : '重新查询';
+    queryText.textContent = isLoading ? '查询中…' : '查询';
   }
 
   function applyGrowthFilters() {
-    GROWTH_STATE.seller = document.getElementById('growth-seller-input').value.trim();
-    renderGrowthView();
+    queryGrowthRecommendation();
   }
 
   function resetGrowthFilters() {
@@ -1061,7 +1126,16 @@
       GROWTH_STATE.seller = GROWTH_STATE.sellers[0].ggp_account_name || GROWTH_STATE.sellers[0].GGP_name;
       document.getElementById('growth-seller-input').value = GROWTH_STATE.seller;
     }
-    renderGrowthView();
+    else {
+      GROWTH_STATE.seller = '';
+      document.getElementById('growth-seller-input').value = '';
+    }
+    GROWTH_STATE.data = { summaryNarrative: [], summaryRows: [], allSku: [] };
+    renderGrowthStrategyTabs();
+    renderGrowthSummaryTable();
+    renderGrowthFilterControls();
+    renderGrowthSkuProducts();
+    document.getElementById('growth-status-text').textContent = '请输入完整 GGP Name，然后点击查询';
   }
 
   function mapBackendResultToDemo(result) {
