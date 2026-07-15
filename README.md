@@ -23,7 +23,7 @@ Nginx :80 (or company Ingress)
          DataSuite API
 ```
 
-同一 Nginx 还将 `/server_surveillance/` 转发到独立的只读监控服务。监控服务读取宿主机负载、内存、运行时间和 TCP 监听状态，并通过内部健康接口检查 Listing Workstation；它不挂载 Docker Socket，不读取进程列表，也不返回凭证。页面的“本机端口与项目”模块只展示 `surveillance/projects.json` 中登记的项目，新增服务器项目时可在该文件补充项目名、监听地址、端口和网页路径。
+同一 Nginx 还将 `/server_surveillance/` 转发到独立的只读监控服务。监控服务读取宿主机负载、内存、运行时间和 TCP 监听状态，并通过内部健康接口检查 Listing Workstation；它不挂载 Docker Socket，不读取进程列表，也不返回凭证。页面的“本机端口与项目”模块只展示 `surveillance/projects.json` 中登记的项目，状态来自主机内核监听或登记的内部健康地址。新增服务器项目时可在该文件补充项目名、监听地址、端口、健康地址和网页路径。
 
 服务启动后会读取本地卖家缓存，并在后台请求一次卖家数据。之后每 24 小时重新请求 DataSuite，从返回行中提取唯一卖家并原子更新 `/app/data/sellers.json`。即使刷新失败，服务也会保留上一次成功的列表。
 

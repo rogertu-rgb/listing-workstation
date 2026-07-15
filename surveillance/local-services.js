@@ -66,6 +66,7 @@ export async function readProjectRegistry() {
     bindAddress: String(project.bindAddress || '127.0.0.1'),
     port: Number(project.port),
     protocol: String(project.protocol || 'TCP'),
+    checkUrl: project.checkUrl ? String(project.checkUrl) : '',
     purpose: String(project.purpose || ''),
     routes: Array.isArray(project.routes) ? project.routes.map(String) : []
   }));
@@ -73,19 +74,30 @@ export async function readProjectRegistry() {
 
 export async function buildLocalProjectInventory() {
   const [projects, listeners] = await Promise.all([readProjectRegistry(), readHostListeners()]);
-  const items = projects.map((project) => {
+  const items = await Promise.all(projects.map(async (project) => {
     const listener = listeners.find((candidate) => listenerMatches(project, candidate));
+    let reachable = false;
+    if (!listener && project.checkUrl) {
+      try {
+        const response = await fetch(project.checkUrl, { signal: AbortSignal.timeout(2_000) });
+        reachable = response.status < 500;
+      } catch {
+        reachable = false;
+      }
+    }
+    const { checkUrl, ...safeProject } = project;
     return {
-      ...project,
+      ...safeProject,
       endpoint: `${project.bindAddress}:${project.port}`,
-      state: listener ? 'active' : 'inactive',
+      state: listener || reachable ? 'active' : 'inactive',
+      detectionSource: listener ? 'kernel-listener' : reachable ? 'service-health' : 'unavailable',
       listenerFamily: listener?.family
     };
-  });
+  }));
   return {
     registeredCount: items.length,
     activeCount: items.filter((item) => item.state === 'active').length,
     projects: items,
-    note: '只展示已登记项目及其监听状态，不展示进程、PID 或未登记系统端口。'
+    note: '状态来自主机内核监听或已登记服务健康探测；不展示进程、PID 或未登记系统端口。'
   };
 }
