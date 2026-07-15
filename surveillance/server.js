@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CpuSampler, readHostSnapshot } from './metrics.js';
+import { buildLocalProjectInventory } from './local-services.js';
 
 const port = Number(process.env.PORT || 8090);
 const listingHealthUrl = process.env.LISTING_WORKSTATION_HEALTH_URL || 'http://listing-workstation:8080/api/health';
@@ -60,9 +61,10 @@ function worstState(states) {
 }
 
 async function buildStatus() {
-  const [host, listingService] = await Promise.all([
+  const [host, listingService, localProjects] = await Promise.all([
     readHostSnapshot(cpuSampler.sample()),
-    checkService('Listing Workstation', listingHealthUrl)
+    checkService('Listing Workstation', listingHealthUrl),
+    buildLocalProjectInventory()
   ]);
   const monitorService = {
     name: 'Server Surveillance',
@@ -72,10 +74,17 @@ async function buildStatus() {
   };
   const services = [listingService, monitorService];
   return {
-    overallState: worstState([host.loadState, host.cpuState, host.memory.state, ...services.map((service) => service.state)]),
+    overallState: worstState([
+      host.loadState,
+      host.cpuState,
+      host.memory.state,
+      ...services.map((service) => service.state),
+      localProjects.activeCount === localProjects.registeredCount ? 'healthy' : 'warning'
+    ]),
     generatedAt: new Date().toISOString(),
     host,
     services,
+    localProjects,
     monitorUptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
     refreshAfterSeconds: 10
   };
@@ -125,4 +134,3 @@ function shutdown() {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
-

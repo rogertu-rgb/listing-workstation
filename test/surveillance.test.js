@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadState, memoryState, parseLoadAverage, parseMemoryInfo, parseUptime } from '../surveillance/metrics.js';
+import { listenerMatches, parseProcNetListeners } from '../surveillance/local-services.js';
 
 test('server surveillance parses Linux proc metrics', () => {
   assert.deepEqual(parseLoadAverage('1.25 0.80 0.40 1/100 42\n'), { one: 1.25, five: 0.8, fifteen: 0.4 });
@@ -22,3 +23,19 @@ test('server surveillance applies health thresholds', () => {
   assert.equal(memoryState(90), 'critical');
 });
 
+test('server surveillance parses host TCP listeners and maps registered projects', () => {
+  const procNet = [
+    '  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode',
+    '   0: 00000000:0050 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 1',
+    '   1: 0100007F:1F90 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 2',
+    '   2: 0100007F:2382 00000000:0000 01 00000000:00000000 00:00000000 00000000 0 0 3'
+  ].join('\n');
+  const listeners = parseProcNetListeners(procNet);
+  assert.deepEqual(listeners, [
+    { address: '0.0.0.0', port: 80, family: 'ipv4' },
+    { address: '127.0.0.1', port: 8080, family: 'ipv4' }
+  ]);
+  assert.equal(listenerMatches({ bindAddress: '0.0.0.0', port: 80 }, listeners[0]), true);
+  assert.equal(listenerMatches({ bindAddress: '127.0.0.1', port: 8080 }, listeners[1]), true);
+  assert.equal(listenerMatches({ bindAddress: '127.0.0.1', port: 8090 }, listeners[1]), false);
+});

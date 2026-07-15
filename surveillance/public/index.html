@@ -85,6 +85,21 @@
     .service-name { font-size: 13px; font-weight: 720; }
     .service-message { margin-top: 3px; color: var(--muted); font-size: 11px; }
     .service-latency { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .project-section { margin-top: 24px; }
+    .project-list { list-style: none; margin: 0; padding: 0; }
+    .project-row { display: grid; grid-template-columns: minmax(190px, .9fr) minmax(180px, .85fr) minmax(240px, 1.4fr) auto; gap: 20px; align-items: center; padding: 17px 20px; }
+    .project-row + .project-row { border-top: 1px solid var(--line); }
+    .project-identity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 11px; align-items: center; }
+    .project-state { width: 9px; height: 9px; border-radius: 50%; background: var(--critical); box-shadow: 0 0 0 4px var(--critical-soft); }
+    .project-row[data-state="active"] .project-state { background: var(--healthy); box-shadow: 0 0 0 4px var(--healthy-soft); }
+    .project-name { font-size: 13px; font-weight: 730; }
+    .project-purpose { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .project-endpoint { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .project-scope { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .route-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .route-chip { max-width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; background: var(--surface-muted); color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .project-status-copy { color: var(--muted); font-size: 12px; font-weight: 650; white-space: nowrap; }
+    .project-row[data-state="active"] .project-status-copy { color: var(--healthy); }
     .footnote { margin: 22px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
     .skeleton { color: transparent; border-radius: 5px; background: var(--surface-muted); animation: pulse 1.3s ease-in-out infinite; }
     @keyframes pulse { 50% { opacity: .55; } }
@@ -105,6 +120,8 @@
       .metric + .metric { border-left: 0; border-top: 1px solid var(--line); }
       .charts { grid-template-columns: 1fr; }
       .chart + .chart { border-left: 0; border-top: 1px solid var(--line); }
+      .project-row { grid-template-columns: 1fr; gap: 11px; }
+      .project-status-copy { padding-left: 20px; }
     }
   </style>
 </head>
@@ -190,7 +207,20 @@
       </section>
     </div>
 
-    <p class="footnote">Load Average 表示等待 CPU 或不可中断资源的工作量，并不等同于 CPU 百分比。标准化 Load 使用 1 分钟 Load 除以 CPU 核数，达到 70% 时提示关注，达到 100% 时标记为高负载。</p>
+    <section class="section project-section">
+      <div class="section-head">
+        <div>
+          <h2>本机端口与项目</h2>
+          <span class="section-note">已登记的 localhost / host 监听端口，不展示进程与系统端口</span>
+        </div>
+        <span class="section-note" id="project-count">检查中</span>
+      </div>
+      <ul class="project-list" id="project-list">
+        <li class="project-row"><div class="project-identity"><span class="project-state"></span><div><div class="project-name">正在读取项目注册表</div><div class="project-purpose">等待主机监听状态</div></div></div></li>
+      </ul>
+    </section>
+
+    <p class="footnote">Load Average 表示等待 CPU 或不可中断资源的工作量，并不等同于 CPU 百分比。端口项目映射来自受控注册表，监听状态来自主机内核；监控页不会读取或展示 PID、进程命令、凭证以及未登记系统端口。</p>
   </main>
 
   <script>
@@ -200,6 +230,11 @@
     var isLoading = false;
 
     function byId(id) { return document.getElementById(id); }
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+      });
+    }
     function clamp(value) { return Math.max(0, Math.min(100, Number(value) || 0)); }
     function formatPercent(value) { return Number(value || 0).toFixed(1) + '%'; }
     function formatBytes(bytes) {
@@ -250,6 +285,26 @@
         return '<li class="service-row" data-state="' + service.state + '"><span class="service-icon" aria-hidden="true"></span><div><div class="service-name">' + service.name + '</div><div class="service-message">' + service.message + configured + '</div></div><span class="service-latency">' + service.latencyMs + ' ms</span></li>';
       }).join('');
     }
+    function renderLocalProjects(inventory) {
+      var projects = inventory && Array.isArray(inventory.projects) ? inventory.projects : [];
+      var activeCount = Number(inventory && inventory.activeCount || 0);
+      byId('project-count').textContent = activeCount + ' / ' + projects.length + ' 正在监听';
+      if (!projects.length) {
+        byId('project-list').innerHTML = '<li class="project-row"><div class="project-purpose">当前没有登记本机项目端口</div></li>';
+        return;
+      }
+      byId('project-list').innerHTML = projects.map(function(project) {
+        var routes = (project.routes || []).map(function(route) {
+          return '<span class="route-chip">' + escapeHtml(route) + '</span>';
+        }).join('');
+        var scope = project.bindAddress === '127.0.0.1' ? '仅服务器本机可直连' : project.bindAddress === '0.0.0.0' ? '服务器所有网卡监听' : '指定地址监听';
+        return '<li class="project-row" data-state="' + escapeHtml(project.state) + '">' +
+          '<div class="project-identity"><span class="project-state" aria-hidden="true"></span><div><div class="project-name">' + escapeHtml(project.projectName) + '</div><div class="project-purpose">' + escapeHtml(project.purpose) + '</div></div></div>' +
+          '<div><div class="project-endpoint">' + escapeHtml(project.protocol) + ' · ' + escapeHtml(project.endpoint) + '</div><div class="project-scope">' + scope + '</div></div>' +
+          '<div class="route-list">' + (routes || '<span class="project-purpose">无网页路由</span>') + '</div>' +
+          '<div class="project-status-copy">' + (project.state === 'active' ? '正在使用' : '未监听') + '</div></li>';
+      }).join('');
+    }
     function renderStatus(data) {
       var host = data.host;
       byId('status-banner').dataset.state = data.overallState;
@@ -276,6 +331,7 @@
       renderChart('load-chart', historyData.load, '');
       renderChart('memory-chart', historyData.memory, 'memory');
       renderServices(data.services || []);
+      renderLocalProjects(data.localProjects || {});
     }
     async function refreshStatus() {
       if (isLoading) return;
@@ -306,4 +362,3 @@
   </script>
 </body>
 </html>
-

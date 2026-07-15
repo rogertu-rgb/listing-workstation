@@ -1,0 +1,20 @@
+[
+  {
+    "projectId": "shared-web-gateway",
+    "projectName": "Shared Web Gateway",
+    "bindAddress": "0.0.0.0",
+    "port": 80,
+    "protocol": "HTTP",
+    "purpose": "Nginx 统一入口，按路径转发服务器上的网页项目",
+    "routes": ["/listing_workstation/", "/server_surveillance/"]
+  },
+  {
+    "projectId": "listing-workstation",
+    "projectName": "Listing Workstation",
+    "bindAddress": "127.0.0.1",
+    "port": 8080,
+    "protocol": "HTTP",
+    "purpose": "Listing Workstation Node.js API，仅供服务器本机与 Nginx 使用",
+    "routes": ["/listing_workstation/"]
+  }
+]

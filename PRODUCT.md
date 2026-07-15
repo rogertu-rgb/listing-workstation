@@ -12,7 +12,7 @@ Shopee seller-management and BI users who need to inspect a GGP seller and turn 
 
 Listing Workstation accepts a complete GGP Name, queries DataSuite directly, and presents zone-level strategy summaries plus the most relevant listings. Success means a user can intentionally run one seller query, understand its progress, and act on a trustworthy result without depending on a Google Sheet queue.
 
-Server Surveillance provides a separate, read-only view of server load, memory, uptime, response latency, and critical application health. Success means an operator can recognize normal, warning, or critical conditions without receiving sensitive process, credential, or infrastructure data.
+Server Surveillance provides a separate, read-only view of server load, memory, uptime, response latency, critical application health, and registered host-port-to-project mappings. Success means an operator can recognize normal, warning, or critical conditions and identify which managed project owns a localhost listener without receiving PID, process command, credential, or unregistered system-port data.
 
 ## Brand Personality
 

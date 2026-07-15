@@ -31,6 +31,8 @@ services:
       - /proc/loadavg:/host/proc/loadavg:ro
       - /proc/meminfo:/host/proc/meminfo:ro
       - /proc/uptime:/host/proc/uptime:ro
+      - /proc/net/tcp:/host/proc/net/tcp:ro
+      - /proc/net/tcp6:/host/proc/net/tcp6:ro
 
   nginx:
     image: nginx:1.27-alpine

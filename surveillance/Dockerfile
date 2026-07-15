@@ -6,6 +6,8 @@ WORKDIR /app
 COPY package.json ./
 COPY surveillance ./surveillance
 
+RUN mkdir -p /host/proc/net && chown -R node:node /host
+
 USER node
 EXPOSE 8090
 
